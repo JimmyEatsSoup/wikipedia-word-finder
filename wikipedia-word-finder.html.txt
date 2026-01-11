@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wikipedia Word Finder</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #eee;
+    padding: 20px;
+}
+input, button {
+    padding: 10px;
+    font-size: 16px;
+}
+button {
+    cursor: pointer;
+}
+.result {
+    background: #1e1e1e;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+}
+</style>
+</head>
+<body>
+
+<h1>Wikipedia Word Finder</h1>
+<p>Enter a word to find Wikipedia pages that contain it.</p>
+
+<input id="word" placeholder="Enter a word">
+<button onclick="search()">Search</button>
+
+<div id="results"></div>
+
+<script>
+async function search() {
+    const word = document.getElementById("word").value.trim();
+    if (!word) return;
+
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = "Searching...";
+
+    const searchURL = `https://en.wikipedia.org/w/api.php?origin=*&action=query&list=search&srsearch=${encodeURIComponent(word)}&srlimit=10&format=json`;
+    const searchData = await fetch(searchURL).then(r => r.json());
+
+    resultsDiv.innerHTML = "";
+
+    for (const page of searchData.query.search) {
+        const pageURL = `https://en.wikipedia.org/w/api.php?origin=*&action=query&prop=extracts&pageids=${page.pageid}&explaintext=1&format=json`;
+        const pageData = await fetch(pageURL).then(r => r.json());
+
+        const text = Object.values(pageData.query.pages)[0].extract || "";
+        const regex = new RegExp(`\\b${word}\\b`, "gi");
+        const count = (text.match(regex) || []).length;
+
+        const div = document.createElement("div");
+        div.className = "result";
+        div.innerHTML = `<strong>${page.title}</strong><br>Occurrences: ${count}`;
+        resultsDiv.appendChild(div);
+    }
+}
+</script>
+
+</body>
+</html>
